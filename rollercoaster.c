@@ -104,9 +104,9 @@ void* passengerThread(){
 int main() {
 	// Set new instance of passenger threads, car capacity and total rides values
 	srand(time(NULL));
-	passengers = rand() % (MAX_PASSENGERS + 2);
-	capacity = rand() % (passengers - 1);
-	total_rides =  rand() % (MAX_RIDES+1);
+	passengers = 2 + rand() % MAX_PASSENGERS;
+	capacity = 1 + rand() % (passengers - 1);
+	total_rides = 1 + rand() % MAX_RIDES;
 
 	pthread_t passenger[passengers];
 	pthread_t car;

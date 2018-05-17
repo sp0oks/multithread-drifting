@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -pedantic -g -lpthread
+CFLAGS = -Wall -pedantic -g -lpthread -lrt
 PROGRAMS = rollercoaster
 
 all: $(PROGRAMS)
