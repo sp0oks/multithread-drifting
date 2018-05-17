@@ -22,8 +22,8 @@ volatile int boarded = 0; // current number of passenger threads that have board
 volatile int unboarded = 0; // current number of passenger threads that have unboarded
 volatile int current_ride = 0; // current number of rides
 volatile int total_rides; // total number of coaster rides for the instance
-int passengers; // current number of passenger threads
-int capacity; // current capacity of the car thread
+volatile int passengers; // current number of passenger threads
+volatile int capacity; // current capacity of the car thread
 
 /* Helper functions */
 void load(){
