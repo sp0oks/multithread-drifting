@@ -7,6 +7,7 @@
 
 // Maximum number of passenger threads available
 #define MAX_PASSENGERS 25
+#define MAX_RIDES 10
 
 /* Variables */
 pthread_mutex_t check_in_lock; // mutex to control access of the 'boarded' variable
@@ -20,7 +21,7 @@ sem_t all_unboarded; // binary semaphore to signal passenger threads for boardin
 volatile int boarded = 0; // current number of passenger threads that have boarded
 volatile int unboarded = 0; // current number of passenger threads that have unboarded
 volatile int current_ride = 0; // current number of rides
-volatile int max_rides; // total number of coaster rides for the instance
+volatile int total_rides; // total number of coaster rides for the instance
 int passengers; // current number of passenger threads
 int capacity; // current capacity of the car thread
 
@@ -52,17 +53,18 @@ void unboard(){
 /* Thread Functions */
 void* carThread(){
 	int i;
-	while(current_ride < max_rides){
+	// Run the roller coaster for <total_rides> times
+	while(current_ride < total_rides){
 		load();
 		
 		for(i = 0; i < capacity; i++) sem_post(&board_queue); // Signal C passenger threads to board the car
-		sem_wait(&all_boarded); // Tell the rest of the passengers to wait for the next ride
+		sem_wait(&all_boarded); // Wait for all passengers to board
 		
 		run();
 		unload();
 		
-		for(i = 0; i < capacity; i++) sem_post(&unboard_queue); //
-		sem_wait(&all_unboarded);
+		for(i = 0; i < capacity; i++) sem_post(&unboard_queue); // Signal the passengers in the car to unboard
+		sem_wait(&all_unboarded); // Tell the queue to start boarding again
 		printf("The car is now empty!\n\n");
 		
 		current_ride++;
@@ -71,28 +73,29 @@ void* carThread(){
 }
 
 void* passengerThread(){
+	// Run indefinitely, threads will be destroyed when the main process exits
 	while(1){
-		sem_wait(&board_queue);
+		sem_wait(&board_queue); // Wait for the car thread signal to board
 		
-		pthread_mutex_lock(&check_in_lock);
+		pthread_mutex_lock(&check_in_lock); // Lock access to shared variable before incrementing
 		boarded++;
 		board();
 		if (boarded == capacity){
-			sem_post(&all_boarded);
+			sem_post(&all_boarded); // If this is the last passenger to board, signal the car to run
 			boarded = 0;
 		}
-		pthread_mutex_unlock(&check_in_lock);
+		pthread_mutex_unlock(&check_in_lock); // Unlock access to shared variable
 
-		sem_wait(&unboard_queue);
+		sem_wait(&unboard_queue); // Wait for the ride to end
 	
-		pthread_mutex_lock(&riding_lock);
+		pthread_mutex_lock(&riding_lock); // Lock access to shared variable before incrementing
 		unboarded++;
 		unboard();
 		if (unboarded == capacity){
-			sem_post(&all_unboarded);
+			sem_post(&all_unboarded); // If this is the last passenger to unboard, signal the car to allow boarding
 			unboarded = 0;
 		}
-		pthread_mutex_unlock(&riding_lock);
+		pthread_mutex_unlock(&riding_lock); // Unlock access to shared variable
 	}
     	return NULL;
 }
@@ -103,7 +106,7 @@ int main() {
 	srand(time(NULL));
 	passengers = rand() % (MAX_PASSENGERS + 2);
 	capacity = rand() % (passengers - 1);
-	max_rides = 1 + rand() % 5;
+	total_rides =  rand() % (MAX_RIDES+1);
 
 	pthread_t passenger[passengers];
 	pthread_t car;
@@ -117,7 +120,7 @@ int main() {
 	sem_init(&unboard_queue, 0, 0);
 	sem_init(&all_unboarded, 0, 0);
 
-	printf("Today the roller coaster will ride %d times!\n", max_rides);
+	printf("Today the roller coaster will ride %d times!\n", total_rides);
 	printf("There are %d passengers waiting in the roller coaster queue!\n\n", passengers);
 	
 	// Create the threads and start the roller coaster
